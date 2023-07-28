@@ -2,33 +2,30 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 )
 
 func main() {
-	var router Router
+	router := chi.NewRouter()
+	router.Get("/", homeHandler)
+	router.Get("/contact", contactHandler)
+	router.Get("/faq", faqHandler)
+	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "This page is maybe disappeared in a black hole!! 🕳️")
+	})
+
+	router.Get("/param/{id}", func(w http.ResponseWriter, r *http.Request) {
+		param := chi.URLParam(r, "id")
+		fmt.Fprintf(w, "Hello %s", param)
+	})
+
 	fmt.Println("server listening at :1313...")
 	if err := http.ListenAndServe(":1313", router); err != nil {
 		log.Fatal(err)
 	}
 
-}
-
-type Router struct {
-}
-
-func (Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	case "/":
-		homeHandler(w, r)
-	case "/contact":
-		contactHandler(w, r)
-	case "/faq":
-		faqHandler(w, r)
-	default:
-		http.Error(w, "Page not found.", http.StatusNotFound)
-	}
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
