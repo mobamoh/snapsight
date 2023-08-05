@@ -1,17 +1,16 @@
 package controllers
 
 import (
-	"github.com/mobamoh/snapsight/views"
 	"net/http"
 )
 
-func StaticHandler(template views.Template) http.HandlerFunc {
+func StaticHandler(template Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		template.Execute(w, nil)
 	}
 }
 
-func FaqHandler(template views.Template) http.HandlerFunc {
+func FaqHandler(template Template) http.HandlerFunc {
 	faq := []struct {
 		Question string
 		Answer   string

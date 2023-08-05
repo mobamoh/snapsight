@@ -19,6 +19,11 @@ func main() {
 
 	router.Get("/faq", controllers.FaqHandler(views.Must(views.ParseFS(templates.FS, "layout.gohtml", "faq.gohtml"))))
 
+	userCtrl := controllers.Users{}
+	userCtrl.Templates.New = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "signup.gohtml"))
+	router.Get("/signup", userCtrl.New)
+	router.Post("/signup", userCtrl.Create)
+
 	fmt.Println("server listening at :1313...")
 	if err := http.ListenAndServe(":1313", router); err != nil {
 		log.Fatal(err)
