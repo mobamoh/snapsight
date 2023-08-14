@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/csrf"
 	"github.com/mobamoh/snapsight/controllers"
 	"github.com/mobamoh/snapsight/models"
 	"github.com/mobamoh/snapsight/templates"
@@ -48,8 +49,11 @@ func main() {
 	router.Get("/signin", userCtrl.GetSignIn)
 	router.Post("/signin", userCtrl.PostSignIn)
 
+	csrfKey := "gFvi45R4fy5xNBlnEeZtQbfAVCYEIAUX"
+	csrfMw := csrf.Protect([]byte(csrfKey), csrf.Secure(false)) // TODO: change for prod
+
 	fmt.Println("server listening at :1313...")
-	if err := http.ListenAndServe(":1313", router); err != nil {
+	if err := http.ListenAndServe(":1313", csrfMw(router)); err != nil {
 		log.Fatal(err)
 	}
 

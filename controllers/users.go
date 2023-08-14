@@ -20,7 +20,7 @@ func (u Users) GetSignUp(w http.ResponseWriter, r *http.Request) {
 		Email string
 	}
 	data.Email = r.FormValue("email")
-	u.Templates.New.Execute(w, data)
+	u.Templates.New.Execute(w, r, data)
 }
 
 func (u Users) PostSignUp(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,7 @@ func (u Users) GetSignIn(w http.ResponseWriter, r *http.Request) {
 		Email string
 	}
 	data.Email = r.FormValue("email")
-	u.Templates.SignIn.Execute(w, data)
+	u.Templates.SignIn.Execute(w, r, data)
 }
 
 func (u Users) PostSignIn(w http.ResponseWriter, r *http.Request) {
@@ -52,5 +52,12 @@ func (u Users) PostSignIn(w http.ResponseWriter, r *http.Request) {
 		log.Printf("signin: %v", err)
 		http.Error(w, "something went wrong!", http.StatusInternalServerError)
 	}
+	cookie := http.Cookie{
+		Name:     "email",
+		Value:    email,
+		Path:     "/",
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &cookie)
 	fmt.Fprintf(w, "user authenticated: %+v", user)
 }
