@@ -8,7 +8,7 @@ import (
 )
 
 type User struct {
-	ID           uint //TODO: change to uid
+	ID           int //TODO: change to uid
 	Email        string
 	PasswordHash string
 	// TODO: add more fields

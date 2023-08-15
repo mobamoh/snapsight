@@ -36,10 +36,15 @@ func main() {
 	userService := models.UserService{
 		DB: db,
 	}
+	sessionService := models.SessionService{
+		DB: db,
+	}
 
 	userCtrl := controllers.Users{
-		UserService: &userService,
+		UserService:    &userService,
+		SessionService: &sessionService,
 	}
+
 	userCtrl.Templates.New = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "signup.gohtml"))
 	userCtrl.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "signin.gohtml"))
 
@@ -48,6 +53,9 @@ func main() {
 
 	router.Get("/signin", userCtrl.GetSignIn)
 	router.Post("/signin", userCtrl.PostSignIn)
+	router.Post("/signout", userCtrl.PostSignOut)
+
+	router.Get("/users/me", userCtrl.CurrentUser)
 
 	csrfKey := "gFvi45R4fy5xNBlnEeZtQbfAVCYEIAUX"
 	csrfMw := csrf.Protect([]byte(csrfKey), csrf.Secure(false)) // TODO: change for prod
