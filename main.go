@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
 	"github.com/mobamoh/snapsight/controllers"
+	"github.com/mobamoh/snapsight/migrations"
 	"github.com/mobamoh/snapsight/models"
 	"github.com/mobamoh/snapsight/templates"
 	"github.com/mobamoh/snapsight/views"
@@ -27,11 +28,14 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
-	err = db.Ping()
-	if err != nil {
+	if err = db.Ping(); err != nil {
 		panic(err)
 	}
-	fmt.Println("Connected!")
+
+	fmt.Println("DB connected...")
+	if err = models.MigrateFS(db, migrations.FS, "."); err != nil {
+		panic(err)
+	}
 
 	userService := models.UserService{
 		DB: db,
