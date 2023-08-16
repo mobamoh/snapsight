@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"github.com/mobamoh/snapsight/rand"
 )
@@ -39,37 +38,28 @@ func (r *SessionService) Create(userID int) (*Session, error) {
 		Token:     token,
 		TokenHash: r.hash(token),
 	}
+
 	row := r.DB.QueryRow(`
-		UPDATE sessions
-		SET token_hash = $2
-		WHERE user_id = $1
-    	RETURNING id;`, session.UserID, session.TokenHash)
-	if err = row.Scan(&session.ID); errors.Is(err, sql.ErrNoRows) {
-		row = r.DB.QueryRow(`
 			INSERT INTO sessions (user_id, token_hash)
-			VALUES ($1, $2)
+				VALUES ($1, $2) 
+			ON CONFLICT (user_id) DO
+				UPDATE SET token_hash = $2
 			RETURNING id;`, session.UserID, session.TokenHash)
-		err = row.Scan(&session.ID)
+	if err = row.Scan(&session.ID); err != nil {
+		return nil, fmt.Errorf("session create: %w", err)
 	}
-	if err != nil {
-		return nil, fmt.Errorf("create: %w", err)
-	}
+
 	return &session, nil
 }
 func (r *SessionService) User(token string) (*User, error) {
 	tokenHash := r.hash(token)
 	var user User
 	row := r.DB.QueryRow(`
-		SELECT user_id FROM sessions WHERE token_hash = $1
-	`, tokenHash)
-	if err := row.Scan(&user.ID); err != nil {
-		return nil, fmt.Errorf("session user: %w", err)
-	}
+		SELECT u.id, u.email, u.password_hash
+		FROM sessions s JOIN users u on u.id = s.user_id 
+		WHERE s.token_hash = $1;`, tokenHash)
 
-	row = r.DB.QueryRow(`
-		SELECT email, password_hash
-		FROM users WHERE id = $1;`, user.ID)
-	if err := row.Scan(&user.Email, &user.PasswordHash); err != nil {
+	if err := row.Scan(&user.ID, &user.Email, &user.PasswordHash); err != nil {
 		return nil, fmt.Errorf("session user: %w", err)
 	}
 	return &user, nil
