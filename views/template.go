@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/gorilla/csrf"
+	"github.com/mobamoh/snapsight/context"
+	"github.com/mobamoh/snapsight/models"
 	"html/template"
 	"io"
 	"io/fs"
@@ -20,6 +22,9 @@ func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
 	tmpl.Funcs(template.FuncMap{
 		"csrfField": func() (template.HTML, error) {
 			return "", fmt.Errorf("implement csrfField method")
+		},
+		"currentUser": func() (template.HTML, error) {
+			return "", fmt.Errorf("implement currentUser method")
 		},
 	})
 
@@ -39,6 +44,9 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 	tmpl = tmpl.Funcs(template.FuncMap{
 		"csrfField": func() template.HTML {
 			return csrf.TemplateField(r)
+		},
+		"currentUser": func() *models.User {
+			return context.User(r.Context())
 		},
 	})
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

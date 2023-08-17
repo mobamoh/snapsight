@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/mobamoh/snapsight/context"
 	"github.com/mobamoh/snapsight/models"
 	"log"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 
 type Users struct {
 	Templates struct {
-		New    Template
+		SignUp Template
 		SignIn Template
 	}
 	UserService    *models.UserService
@@ -21,7 +22,7 @@ func (u Users) GetSignUp(w http.ResponseWriter, r *http.Request) {
 		Email string
 	}
 	data.Email = r.FormValue("email")
-	u.Templates.New.Execute(w, r, data)
+	u.Templates.SignUp.Execute(w, r, data)
 }
 
 func (u Users) PostSignUp(w http.ResponseWriter, r *http.Request) {
@@ -92,19 +93,40 @@ func (u Users) PostSignOut(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	token, err := readCookie(r, CookieSession)
-	if err != nil {
-		fmt.Println(err)
-		http.Redirect(w, r, "/signin", http.StatusFound)
-		return
-	}
-
-	user, err := u.SessionService.User(token)
-	if err != nil {
-		fmt.Println(err)
-		http.Redirect(w, r, "/signin", http.StatusFound)
-		return
-	}
-	// This line causes a panic because the `user` variable is nil
+	user := context.User(r.Context())
 	fmt.Fprintf(w, "Current user: %s\n", user.Email)
+}
+
+type UserMiddleware struct {
+	SessionService *models.SessionService
+}
+
+func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := readCookie(r, CookieSession)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		user, err := umw.SessionService.User(token)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		ctx := r.Context()
+		ctx = context.WithUser(ctx, user)
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := context.User(r.Context())
+		if user == nil {
+			http.Redirect(w, r, "/signin", http.StatusFound)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

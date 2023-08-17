@@ -23,22 +23,24 @@
             </a>
         </div>
         <div class="space-x-4">
-            <form action="/signout" method="post" class="inline pr-4">
-                <div class="hidden">
-                    {{ csrfField }}
-                </div>
-                <button type="submit">Sign out</button>
-            </form>
-            <a href="/signin">Sign in</a>
-            <a href="/signup" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded">
-                Sign up
-            </a>
+            {{if currentUser}}
+                <form action="/signout" method="post" class="inline pr-4">
+                    <div class="hidden">
+                        {{ csrfField }}
+                    </div>
+                    <button type="submit">Sign out</button>
+                </form>
+            {{else}}
+                <a href="/signin">Sign in</a>
+                <a href="/signup" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded">
+                    Sign up
+                </a>
+            {{end}}
         </div>
     </nav>
 </header>
 
 {{template "page" .}}
-
 
 
 <footer class="fixed bottom-0 left-0 z-20 w-full p-4 bg-white border-t border-gray-200 shadow md:flex md:items-center md:justify-between md:p-6 dark:bg-gray-800 dark:border-gray-600">
