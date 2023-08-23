@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DefaultSender = "mo@bamoh.de"
+	DefaultSender = "mobamoh@snapsight.de"
 )
 
 type Email struct {
@@ -33,37 +33,41 @@ func NewEmailService(config SMTPConfig) *EmailService {
 	return &EmailService{
 		dialer: mail.NewDialer(config.Host, config.Port, config.Username, config.Password),
 	}
+	//return &EmailService{
+	//	dialer: mail.NewDialer("sandbox.smtp.mailtrap.io",
+	//		587,
+	//		"50f04ed0de1c7f",
+	//		"2d5d51f442391c"),
+	//}
 }
 
-func (r *EmailService) Send(email Email) error {
+func (service *EmailService) Send(email Email) error {
 	msg := mail.NewMessage()
 	msg.SetHeader("To", email.To)
-	r.setFrom(msg, email)
-	msg.SetHeader("From", email.From)
+	service.setFrom(msg, email)
 	msg.SetHeader("Subject", email.Subject)
-	r.setBody(msg, email)
-
-	err := r.dialer.DialAndSend(msg)
+	service.setBody(msg, email)
+	err := service.dialer.DialAndSend()
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
 	return nil
 }
 
-func (r *EmailService) setFrom(msg *mail.Message, email Email) {
+func (service *EmailService) setFrom(msg *mail.Message, email Email) {
 	var from string
 	switch {
 	case email.From != "":
 		from = email.From
-	case r.DefaultSender != "":
-		from = r.DefaultSender
+	case service.DefaultSender != "":
+		from = service.DefaultSender
 	default:
 		from = DefaultSender
 	}
 	msg.SetHeader("From", from)
 }
 
-func (r *EmailService) setBody(msg *mail.Message, email Email) {
+func (service *EmailService) setBody(msg *mail.Message, email Email) {
 	switch {
 	case email.Plaintext != "" && email.HTML != "":
 		msg.SetBody("text/plain", email.Plaintext)
@@ -75,7 +79,7 @@ func (r *EmailService) setBody(msg *mail.Message, email Email) {
 	}
 }
 
-func (r *EmailService) ForgotPassword(to, resetURL string) error {
+func (service *EmailService) ForgotPassword(to, resetURL string) error {
 	email := Email{
 		Subject:   "Reset your password",
 		To:        to,
@@ -83,7 +87,7 @@ func (r *EmailService) ForgotPassword(to, resetURL string) error {
 		HTML:      `<p>To reset your password, please visit the following link: <a href="` + resetURL + `">` + resetURL + `</a></p>`,
 	}
 
-	err := r.Send(email)
+	err := service.Send(email)
 	if err != nil {
 		return fmt.Errorf("email forgot password: %w", err)
 	}
