@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/mobamoh/snapsight/context"
+	"github.com/mobamoh/snapsight/errors"
 	"github.com/mobamoh/snapsight/models"
 	"log"
 	"net/http"
@@ -32,13 +33,20 @@ func (u Users) GetSignUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) PostSignUp(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	pwd := r.FormValue("password")
 
-	user, err := u.UserService.Create(email, pwd)
+	var data struct {
+		Email    string
+		Password string
+	}
+	data.Email = r.FormValue("email")
+	data.Password = r.FormValue("password")
+
+	user, err := u.UserService.Create(data.Email, data.Password)
 	if err != nil {
-		log.Printf("signin: %v", err)
-		http.Error(w, "something went wrong!", http.StatusInternalServerError)
+		if errors.Is(err, models.ErrEmailTaken) {
+			err = errors.Public(err, "The provided email address is already linked to an existing account.")
+		}
+		u.Templates.SignUp.Execute(w, r, data, err)
 		return
 	}
 
