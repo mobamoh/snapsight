@@ -48,6 +48,9 @@ func main() {
 		DB: db,
 	}
 	emailService := models.NewEmailService(cfg.SMTP)
+	galleryService := models.GalleryService{
+		DB: db,
+	}
 
 	userCtrl := controllers.Users{
 		UserService:          &userService,
@@ -55,11 +58,15 @@ func main() {
 		PasswordResetService: &pwResetService,
 		EmailService:         emailService,
 	}
+	galleryCtrl := controllers.Galleries{
+		GalleryService: &galleryService,
+	}
 
 	// Setup Middleware
 	csrfMw := csrf.Protect(
 		[]byte(cfg.CSRF.Key),
 		csrf.Secure(cfg.CSRF.Secure),
+		csrf.Path("/"),
 	)
 
 	userMw := controllers.UserMiddleware{
@@ -81,6 +88,11 @@ func main() {
 	userCtrl.Templates.CheckYourEmail = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "check-your-email.gohtml"))
 	userCtrl.Templates.ResetPassword = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "reset-pw.gohtml"))
 
+	galleryCtrl.Templates.New = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "galleries/new.gohtml"))
+	galleryCtrl.Templates.Edit = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "galleries/edit.gohtml"))
+	galleryCtrl.Templates.Index = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "galleries/index.gohtml"))
+	galleryCtrl.Templates.Show = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "galleries/show.gohtml"))
+
 	router.Get("/signup", userCtrl.GetSignUp)
 	router.Post("/signup", userCtrl.PostSignUp)
 
@@ -98,6 +110,19 @@ func main() {
 	router.Route("/users/me", func(r chi.Router) {
 		r.Use(userMw.RequireUser)
 		r.Get("/", userCtrl.CurrentUser)
+	})
+
+	router.Route("/galleries", func(subR chi.Router) {
+		subR.Get("/{id}", galleryCtrl.Show)
+		subR.Group(func(r chi.Router) {
+			r.Use(userMw.RequireUser)
+			r.Get("/", galleryCtrl.Index)
+			r.Get("/new", galleryCtrl.New)
+			r.Post("/", galleryCtrl.Create)
+			r.Get("/{id}/edit", galleryCtrl.Edit)
+			r.Post("/{id}", galleryCtrl.Update)
+			r.Post("/{id}/delete", galleryCtrl.Delete)
+		})
 	})
 
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {

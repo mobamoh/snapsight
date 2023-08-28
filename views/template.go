@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"path"
 )
 
 type Template struct {
@@ -24,7 +25,7 @@ type public interface {
 }
 
 func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
-	tmpl := template.New(pattern[0])
+	tmpl := template.New(path.Base(pattern[0]))
 	tmpl.Funcs(template.FuncMap{
 		"csrfField": func() (template.HTML, error) {
 			return "", fmt.Errorf("implement csrfField method")
