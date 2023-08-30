@@ -114,6 +114,7 @@ func main() {
 
 	router.Route("/galleries", func(subR chi.Router) {
 		subR.Get("/{id}", galleryCtrl.Show)
+		subR.Get("/{id}/images/{filename}", galleryCtrl.Image)
 		subR.Group(func(r chi.Router) {
 			r.Use(userMw.RequireUser)
 			r.Get("/", galleryCtrl.Index)
@@ -122,6 +123,8 @@ func main() {
 			r.Get("/{id}/edit", galleryCtrl.Edit)
 			r.Post("/{id}", galleryCtrl.Update)
 			r.Post("/{id}/delete", galleryCtrl.Delete)
+			r.Post("/{id}/images/{filename}/delete", galleryCtrl.DeleteImage)
+			r.Post("/{id}/images", galleryCtrl.UploadImage)
 		})
 	})
 

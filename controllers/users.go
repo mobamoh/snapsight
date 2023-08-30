@@ -58,7 +58,7 @@ func (u Users) PostSignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 func (u Users) GetSignIn(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +87,7 @@ func (u Users) PostSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 func (u Users) PostSignOut(w http.ResponseWriter, r *http.Request) {
@@ -188,7 +188,7 @@ func (u Users) PostResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 type UserMiddleware struct {
