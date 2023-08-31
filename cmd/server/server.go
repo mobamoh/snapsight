@@ -10,7 +10,6 @@ import (
 	"github.com/mobamoh/snapsight/models"
 	"github.com/mobamoh/snapsight/templates"
 	"github.com/mobamoh/snapsight/views"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -23,18 +22,24 @@ func main() {
 		panic(err)
 	}
 
-	// Setup DB
-	db, err := models.Open(cfg.PSQL)
+	err = run(cfg)
 	if err != nil {
 		panic(err)
 	}
+}
+func run(cfg config) error {
+	// Setup DB
+	db, err := models.Open(cfg.PSQL)
+	if err != nil {
+		return err
+	}
 	defer db.Close()
 	if err = db.Ping(); err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Println("DB connected...")
 	if err = models.MigrateFS(db, migrations.FS, "."); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Setup App Services
@@ -128,16 +133,16 @@ func main() {
 		})
 	})
 
+	assetsHandler := http.FileServer(http.Dir("assets"))
+	router.Get("/assets/*", http.StripPrefix("/assets", assetsHandler).ServeHTTP)
+
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Oops!! Page not found", http.StatusNotFound)
 	})
 
 	// Starting Server
 	fmt.Printf("Server listening on %s...\n", cfg.Server.Address)
-	if err := http.ListenAndServe(cfg.Server.Address, csrfMw(router)); err != nil {
-		log.Fatal(err)
-	}
-
+	return http.ListenAndServe(cfg.Server.Address, csrfMw(router))
 }
 
 type config struct {
@@ -158,10 +163,18 @@ func loadEnvConfig() (config, error) {
 	if err != nil {
 		return cfg, err
 	}
-	// TODO: Read the PSQL values from an ENV variable
-	cfg.PSQL = models.DefaultPostgresConfig()
+	cfg.PSQL = models.PostgresConfig{
+		Host:     os.Getenv("PSQL_HOST"),
+		Port:     os.Getenv("PSQL_PORT"),
+		User:     os.Getenv("PSQL_USER"),
+		Password: os.Getenv("PSQL_PASSWORD"),
+		Database: os.Getenv("PSQL_DATABASE"),
+		SSLMode:  os.Getenv("PSQL_SSLMODE"),
+	}
+	if cfg.PSQL.Host == "" && cfg.PSQL.Port == "" {
+		return cfg, fmt.Errorf("no plsql config provided")
+	}
 
-	// TODO: SMTP
 	cfg.SMTP.Host = os.Getenv("SMTP_HOST")
 	portStr := os.Getenv("SMTP_PORT")
 	cfg.SMTP.Port, err = strconv.Atoi(portStr)
@@ -171,12 +184,10 @@ func loadEnvConfig() (config, error) {
 	cfg.SMTP.Username = os.Getenv("SMTP_USERNAME")
 	cfg.SMTP.Password = os.Getenv("SMTP_PASSWORD")
 
-	// TODO: Read the CSRF values from an ENV variable
-	cfg.CSRF.Key = "gFvi45R4fy5xNBlnEeZtQbfAVCYEIAUX"
-	cfg.CSRF.Secure = false
+	cfg.CSRF.Key = os.Getenv("CSRF_KEY")
+	cfg.CSRF.Secure = os.Getenv("CSRF_SECURE") == "true"
 
-	// TODO: Read the server values from an ENV variable
-	cfg.Server.Address = ":1313"
+	cfg.Server.Address = os.Getenv("SERVER_ADDRESS")
 
 	return cfg, nil
 }

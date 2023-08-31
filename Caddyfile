@@ -1,0 +1,4 @@
+# TODO: Replace this with a domain before deploying.
+:80
+
+reverse_proxy server:3000
